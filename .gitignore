@@ -1,0 +1,60 @@
+# ─── Maven / build ─────────────────────────────────────────
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.flattened-pom.xml
+
+# ─── Playwright / test artifacts ─────────────────────────────
+# Videos, screenshots, traces (also under target/ when using default paths)
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Explicit if anything writes outside target/ later
+playwright-artifacts/
+
+# ─── Compiled / packaged ────────────────────────────────────
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ─── Logs & temp ────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+*.cache
+
+# ─── Secrets & local env (never commit) ─────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+credentials.properties
+mdo.credentials.properties
+
+# ─── IDEs ───────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+.factorypath
+*.code-workspace.local
+
+# ─── OS ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
