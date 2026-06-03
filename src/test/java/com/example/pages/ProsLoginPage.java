@@ -95,6 +95,10 @@ public final class ProsLoginPage {
         passwordInput().waitFor(longWait);
     }
 
+    public  void tenantSelection(){
+        page.getByText("QAR Tenant").click();
+    }
+
     /**
      * After a successful Continue, the organization step usually leaves the DOM or stops being visible.
      * Prefer {@link #expectUsernameStepVisible()} when the next step is the username form.

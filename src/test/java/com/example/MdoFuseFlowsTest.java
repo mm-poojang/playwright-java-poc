@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class MdoFuseFlowsTest {
 
     private static final String MDO_FUSE_FLOWS_URL =
-            "https://lt.masterdataonline.com/ui/en/index.html#/home/flows/_all";
+            "https://fuse-int.masterdataonline.com/ngx-auth/en/index.html#/auth/login";
 
     @Test
     void opensMdoFuseFlowsAllPage(Page page) {
