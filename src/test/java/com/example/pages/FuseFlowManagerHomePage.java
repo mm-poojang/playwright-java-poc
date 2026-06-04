@@ -68,16 +68,16 @@ public final class FuseFlowManagerHomePage {
 
     /** Home screen ready → click Design ({@code #home-action-design}). */
     public void selectDesign() {
-        expectOnHomeScreen();
+        // expectOnHomeScreen();
         expectDesignCardHeading();
         clickDesignCard();
     }
 
-    /** Select Design, then wait for Library Add Assets and the Add Asset button. */
-    public FuseFlowManagerAddAssetsPage openAddAssetsScreen() {
-        selectDesign();
-        FuseFlowManagerAddAssetsPage addAssets = new FuseFlowManagerAddAssetsPage(page);
-        addAssets.expectLoaded();
-        return addAssets;
-    }
+    // /** Select Design, then wait for Library Add Assets and the Add Asset button. */
+    // public FuseFlowManagerAddAssetsPage openAddAssetsScreen() {
+    //     selectDesign();
+    //     FuseFlowManagerAddAssetsPage addAssets = new FuseFlowManagerAddAssetsPage(page);
+    //     addAssets.expectLoaded();
+    //     return addAssets;
+    // }
 }

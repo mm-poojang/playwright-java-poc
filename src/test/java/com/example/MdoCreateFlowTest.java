@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(PlaywrightArtifactsExtension.class)
 public class MdoCreateFlowTest {
 
-    private static final String NEW_FLOW_SAMPLE = "testNewAgain";
+    private static final String NEW_FLOW_SAMPLE = "Test1_1780527335710";
     private static final String NEW_BUSINESS_PROCESS_NAME = "Test1";
 
     @Test
@@ -23,10 +23,8 @@ public class MdoCreateFlowTest {
 
         FuseFlowManagerHomePage flowManager = flows.openFlowDiagramInNewTab();
 
-        // Home perspective → Design card (#home-action-design)
-        page.waitForTimeout(4000);
+        // Home perspective → Design card (#home-action-design) on the Fuse Flow Manager tab
         flowManager.expectOnHomeScreen();
-        page.waitForTimeout(3000);
         flowManager.selectDesign();
 
         FuseFlowManagerAddAssetsPage addAssets = new FuseFlowManagerAddAssetsPage(flowManager.page());
@@ -43,7 +41,7 @@ public class MdoCreateFlowTest {
                 addAssets.businessProcessNameInput().inputValue(),
                 "Business Process name field should contain the entered value");
         addAssets.clickCreateBusinessProcessOk();
-        addAssets.waitAfterCreateBusinessProcessOk();
+        addAssets.waitAfterCreateBusinessProcessOk(NEW_BUSINESS_PROCESS_NAME);
     }
 
     /** Shared steps: login, filter to the flow row, open the row ellipsis menu. */

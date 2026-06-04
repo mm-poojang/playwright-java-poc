@@ -11,9 +11,10 @@ import java.util.regex.Pattern;
 public final class FuseFlowManagerAddAssetsPage {
 
     private static final int LOAD_TIMEOUT_MS = 120_000;
-    private static final int DEFAULT_POST_OK_DELAY_MS = 3_000;
+    private static final int OK_CLICK_TIMEOUT_MS = 4_000;
+    private static final int OK_CLICK_INTERVAL_MS = 4_000;
+    private static final int CANVAS_SETTLE_MS = 10_000;
     private static final Pattern BUSINESS_PROCESS_TITLE = Pattern.compile("^\\s*Business Process\\s*$");
-    private static final Pattern OK_BUTTON_LABEL = Pattern.compile("^\\s*Ok\\s*$");
 
     public static final Pattern ADD_ASSETS_URL =
             Pattern.compile(".*kie-wb\\.jsp#LibraryPerspective.*AddAssetsScreen.*");
@@ -24,15 +25,6 @@ public final class FuseFlowManagerAddAssetsPage {
         this.page = page;
     }
 
-    public Page page() {
-        return page;
-    }
-
-    public void expectLoaded() {
-        page.waitForURL(ADD_ASSETS_URL, new Page.WaitForURLOptions().setTimeout(LOAD_TIMEOUT_MS));
-        expectAddAssetButtonVisible();
-    }
-
     public void expectAddAssetButtonVisible() {
         addAssetButton().waitFor(new Locator.WaitForOptions().setTimeout(LOAD_TIMEOUT_MS));
     }
@@ -41,19 +33,11 @@ public final class FuseFlowManagerAddAssetsPage {
         return page.locator("button[data-field='add-asset']");
     }
 
-    public void clickAddAsset() {
+    public void openAssetTypePicker() {
         Locator button = addAssetButton();
         button.scrollIntoViewIfNeeded();
         button.click();
-    }
-
-    public void expectAssetTypePickerVisible() {
         businessProcessCard().waitFor(new Locator.WaitForOptions().setTimeout(LOAD_TIMEOUT_MS));
-    }
-
-    public void openAssetTypePicker() {
-        clickAddAsset();
-        expectAssetTypePickerVisible();
     }
 
     public Locator businessProcessCard() {
@@ -73,12 +57,15 @@ public final class FuseFlowManagerAddAssetsPage {
     }
 
     /**
-     * Visible Bootstrap modal — {@code Create new Business Process}.
-     * Uses {@code .modal.in} / {@code .modal.show} so a hidden template is not matched.
+     * Visible {@code div.modal-content} for {@code Create new Business Process} (matches provided HTML).
      */
-    public Locator createBusinessProcessModal() {
-        return page.locator(".modal.in .modal-content, .modal.show .modal-content")
-                .filter(new Locator.FilterOptions().setHasText("Create new Business Process"));
+    private Locator createBusinessProcessModal() {
+        return page.locator("div.modal-content")
+                .filter(new Locator.FilterOptions()
+                        .setHas(page.locator("h4.modal-title")
+                                .filter(new Locator.FilterOptions().setHasText("Create new Business Process"))))
+                .filter(new Locator.FilterOptions().setVisible(true))
+                .last();
     }
 
     public Locator businessProcessNameInput() {
@@ -86,13 +73,11 @@ public final class FuseFlowManagerAddAssetsPage {
     }
 
     /**
-     * Footer primary button ({@code btn btn-primary}). Label is {@code " Ok"} with a {@code fa-plus} icon,
-     * so {@code getByRole(name=Ok)} is unreliable.
+     * {@code .modal-footer} primary button: {@code <button class="btn btn-primary"><i class="fa fa-plus"></i> Ok</button>}.
      */
-    public Locator createBusinessProcessOkButton() {
+    private Locator createBusinessProcessOkButton() {
         return createBusinessProcessModal()
-                .locator(".modal-footer button.btn-primary")
-                .filter(new Locator.FilterOptions().setHasText(OK_BUTTON_LABEL));
+                .locator(".modal-footer div button.btn-primary");
     }
 
     public void expectCreateBusinessProcessModalVisible() {
@@ -109,42 +94,116 @@ public final class FuseFlowManagerAddAssetsPage {
     }
 
     public void clickCreateBusinessProcessOk() {
+        expectCreateBusinessProcessModalVisible();
+        createBusinessProcessOkButton().click();
+        createBusinessProcessModal().focus();
+        createBusinessProcessOkButton().press("Enter");
+    }
+
+    /**
+     * Clicks Ok every {@value OK_CLICK_INTERVAL_MS} ms while the loading row is visible.
+     */
+    private int clickOkEveryIntervalUntilLoaderHidden() {
         Locator ok = createBusinessProcessOkButton();
-        Locator.ClickOptions click = new Locator.ClickOptions().setTimeout(LOAD_TIMEOUT_MS);
+        Locator.ClickOptions click = new Locator.ClickOptions()
+                .setTimeout(OK_CLICK_TIMEOUT_MS)
+                .setNoWaitAfter(true);
 
         ok.waitFor(new Locator.WaitForOptions()
                 .setState(WaitForSelectorState.VISIBLE)
                 .setTimeout(LOAD_TIMEOUT_MS));
         ok.scrollIntoViewIfNeeded();
 
+        int okClickCount = 0;
+        long deadline = System.currentTimeMillis() + LOAD_TIMEOUT_MS;
+
+        while (System.currentTimeMillis() < deadline) {
+            if (ok.isVisible()) {
+                okClickCount += performOkClick(ok, click, okClickCount + 1);
+            }
+
+            if (!isCreateFlowLoaderVisible()) {
+                System.out.println(
+                        "[FuseFlowManager] Loader not visible after " + okClickCount + " Ok click(s)");
+                return okClickCount;
+            }
+
+            System.out.println(
+                    "[FuseFlowManager] Loader still visible — waiting "
+                            + OK_CLICK_INTERVAL_MS
+                            + " ms before next Ok click");
+            page.waitForTimeout(OK_CLICK_INTERVAL_MS);
+        }
+
+        throw new IllegalStateException(
+                "Loading spinner still visible after " + okClickCount + " Ok click(s) within " + LOAD_TIMEOUT_MS + " ms");
+    }
+
+    private int performOkClick(Locator ok, Locator.ClickOptions click, int attemptNumber) {
         try {
             ok.click(click);
+            System.out.println(
+                    "[FuseFlowManager] Create Business Process Ok click #" + attemptNumber + " (normal)");
+            return 1;
         } catch (RuntimeException firstClickFailed) {
-            // Modal backdrop / GWT overlay sometimes intercepts the first click.
+            System.out.println(
+                    "[FuseFlowManager] Create Business Process Ok click #" + attemptNumber
+                            + " normal failed: "
+                            + firstClickFailed.getMessage());
             ok.click(click.setForce(true));
+            System.out.println(
+                    "[FuseFlowManager] Create Business Process Ok click #" + attemptNumber + " (force)");
+            return 1;
         }
     }
 
-    public void waitAfterCreateBusinessProcessOk() {
-        int ms = postOkDelayMillis();
-        if (ms > 0) {
-            page.waitForTimeout(ms);
+    private boolean isCreateFlowLoaderVisible() {
+        Locator modalLoading = createBusinessProcessModal()
+                .locator("div.well:has(.spinner.spinner-lg):has-text('Loading...')");
+        if (modalLoading.count() > 0 && modalLoading.isVisible()) {
+            return true;
         }
+        Locator pageLoading = page.locator("div.well:has(.spinner.spinner-lg):has-text('Loading...')");
+        return pageLoading.count() > 0 && pageLoading.isVisible();
     }
 
-    public void createBusinessProcessNamed(String name) {
-        expectCreateBusinessProcessModalVisible();
-        fillBusinessProcessName(name);
-        clickCreateBusinessProcessOk();
-        waitAfterCreateBusinessProcessOk();
+    /**
+     * Post-Ok: page loading finishes → open BPMN canvas → pause 10s.
+     */
+    public void waitAfterCreateBusinessProcessOk(String businessProcessName) {
+        waitForPageLoadingToFinish();
+        openCanvas(businessProcessName);
+        page.waitForTimeout(CANVAS_SETTLE_MS);
     }
 
-    private static int postOkDelayMillis() {
-        String raw = System.getProperty("playwright.step.delay.ms", String.valueOf(DEFAULT_POST_OK_DELAY_MS));
-        try {
-            return Integer.parseInt(raw.trim());
-        } catch (NumberFormatException e) {
-            return DEFAULT_POST_OK_DELAY_MS;
-        }
+    private void waitForPageLoadingToFinish() {
+        Locator loading = page.locator("div.well:has(.spinner.spinner-lg):has-text('Loading...')");
+        loading.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.VISIBLE)
+                .setTimeout(LOAD_TIMEOUT_MS));
+        loading.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.HIDDEN)
+                .setTimeout(LOAD_TIMEOUT_MS));
+    }
+
+    private void openCanvas(String businessProcessName) {
+        Pattern name = Pattern.compile(
+                "^\\s*" + Pattern.quote(businessProcessName) + "(?:\\.bpmn)?\\s*$",
+                Pattern.CASE_INSENSITIVE);
+        Locator asset = page.locator("[data-field='name'], span.name, td, a")
+                .filter(new Locator.FilterOptions().setHasText(name))
+                .first();
+
+        asset.waitFor(new Locator.WaitForOptions()
+                .setState(WaitForSelectorState.VISIBLE)
+                .setTimeout(LOAD_TIMEOUT_MS));
+        asset.scrollIntoViewIfNeeded();
+        asset.dblclick(new Locator.DblclickOptions().setTimeout(LOAD_TIMEOUT_MS));
+
+        page.locator("div.ORYX_Editor canvas, #oryx_canvas canvas, canvas")
+                .first()
+                .waitFor(new Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.VISIBLE)
+                        .setTimeout(LOAD_TIMEOUT_MS));
     }
 }

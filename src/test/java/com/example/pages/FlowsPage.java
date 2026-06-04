@@ -1,5 +1,6 @@
 package com.example.pages;
 
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -191,12 +192,20 @@ public final class FlowsPage {
         flowRowActionsMenu().waitFor(new Locator.WaitForOptions().setTimeout(LOAD_TIMEOUT_MS));
     }
 
-    /** Chooses {@code Edit flow diagram} from the row actions menu (Publish, View Event logs, …). */
+    public Locator editFlowDiagramMenuItem() {
+        return flowRowActionsMenu()
+                .getByRole(AriaRole.MENUITEM, new Locator.GetByRoleOptions().setName("Edit flow diagram"));
+    }
+
+    /**
+     * Chooses {@code Edit flow diagram} from the row actions menu.
+     * Uses {@code noWaitAfter} because the app opens Fuse Flow Manager in a new tab — the flows
+     * list page does not navigate, and a default click would hang waiting for navigation.
+     */
     public void clickEditFlowDiagram() {
         expectFlowRowActionsMenuVisible();
-        flowRowActionsMenu()
-                .getByRole(AriaRole.MENUITEM, new Locator.GetByRoleOptions().setName("Edit flow diagram"))
-                .click();
+        editFlowDiagramMenuItem()
+                .click(new Locator.ClickOptions().setNoWaitAfter(true));
     }
 
     // /** Clicks the clickable flow title ({@code lib-text-line}) in the matching row. */
@@ -208,10 +217,17 @@ public final class FlowsPage {
     // }
 
     /**
-     * Clicks {@code Edit flow diagram} and returns the Fuse Flow Manager tab opened by the app.
+     * Clicks {@code Edit flow diagram} and returns the Fuse Flow Manager tab opened by the app
+     * ({@code kie-wb.jsp} in a new browser tab).
      */
     public FuseFlowManagerHomePage openFlowDiagramInNewTab() {
-        Page flowManagerTab = page.waitForPopup(this::clickEditFlowDiagram);
+        BrowserContext context = page.context();
+        BrowserContext.WaitForPageOptions waitForTab =
+                new BrowserContext.WaitForPageOptions().setTimeout(LOAD_TIMEOUT_MS);
+
+        Page flowManagerTab = context.waitForPage(waitForTab, this::clickEditFlowDiagram);
+        flowManagerTab.waitForLoadState();
+
         FuseFlowManagerHomePage home = new FuseFlowManagerHomePage(flowManagerTab);
         home.expectLoaded();
         return home;
