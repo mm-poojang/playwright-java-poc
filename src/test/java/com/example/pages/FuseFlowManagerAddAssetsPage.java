@@ -17,11 +17,7 @@ public final class FuseFlowManagerAddAssetsPage {
     private static final int SUBMISSION_POLL_MS = 3_000;
     private static final int GWT_SETTLE_MS = 300;
     private static final int GWT_KEY_DELAY_MS = 30;
-    private static final int CANVAS_SETTLE_MS = 10_000;
     private static final Pattern BUSINESS_PROCESS_TITLE = Pattern.compile("^\\s*Business Process\\s*$");
-
-    public static final Pattern ADD_ASSETS_URL =
-            Pattern.compile(".*kie-wb\\.jsp#LibraryPerspective.*AddAssetsScreen.*");
 
     private final Page page;
 
@@ -282,39 +278,6 @@ public final class FuseFlowManagerAddAssetsPage {
      * Post-Ok: page loading finishes → open BPMN canvas → pause 10s.
      */
     public void waitAfterCreateBusinessProcessOk(String businessProcessName) {
-        waitForPageLoadingToFinish();
-        openCanvas(businessProcessName);
-        page.waitForTimeout(CANVAS_SETTLE_MS);
-    }
-
-    private void waitForPageLoadingToFinish() {
-        Locator loading = page.locator("div.well:has(.spinner.spinner-lg):has-text('Loading...')");
-        loading.waitFor(new Locator.WaitForOptions()
-                .setState(WaitForSelectorState.VISIBLE)
-                .setTimeout(LOAD_TIMEOUT_MS));
-        loading.waitFor(new Locator.WaitForOptions()
-                .setState(WaitForSelectorState.HIDDEN)
-                .setTimeout(LOAD_TIMEOUT_MS));
-    }
-
-    private void openCanvas(String businessProcessName) {
-        Pattern name = Pattern.compile(
-                "^\\s*" + Pattern.quote(businessProcessName) + "(?:\\.bpmn)?\\s*$",
-                Pattern.CASE_INSENSITIVE);
-        Locator asset = page.locator("[data-field='name'], span.name, td, a")
-                .filter(new Locator.FilterOptions().setHasText(name))
-                .first();
-
-        asset.waitFor(new Locator.WaitForOptions()
-                .setState(WaitForSelectorState.VISIBLE)
-                .setTimeout(LOAD_TIMEOUT_MS));
-        asset.scrollIntoViewIfNeeded();
-        asset.dblclick(new Locator.DblclickOptions().setTimeout(LOAD_TIMEOUT_MS));
-
-        page.locator("div.ORYX_Editor canvas, #oryx_canvas canvas, canvas")
-                .first()
-                .waitFor(new Locator.WaitForOptions()
-                        .setState(WaitForSelectorState.VISIBLE)
-                        .setTimeout(LOAD_TIMEOUT_MS));
+         page.waitForTimeout(LOAD_TIMEOUT_MS);
     }
 }

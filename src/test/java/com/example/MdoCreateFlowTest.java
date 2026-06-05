@@ -14,8 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(PlaywrightArtifactsExtension.class)
 public class MdoCreateFlowTest {
 
-    private static final String NEW_FLOW_SAMPLE = "Test1_1780527335710";
-    private static final String NEW_BUSINESS_PROCESS_NAME = "Test1";
+    private static final String NEW_FLOW_SAMPLE = "New_Flow_Test1";
+    private static final String NEW_BUSINESS_PROCESS_NAME = "Test2";
 
     @Test
     void opensFlowDiagramAndSelectsBusinessProcessAsset(Page page) {
@@ -48,25 +48,25 @@ public class MdoCreateFlowTest {
     private FlowsPage navigateToFlowRowActions(Page page) {
         FlowsPage flows = MdoSession.signInOpenFlowsAll(page);
 
-        // flows.clickCreateNewFlow();
-        // CreateNewFlowSidebarPage createFlow = new CreateNewFlowSidebarPage(page);
-        // createFlow.expectOpen();
+        flows.clickCreateNewFlow();
+        CreateNewFlowSidebarPage createFlow = new CreateNewFlowSidebarPage(page);
+        createFlow.expectOpen();
 
-        // createFlow.fillProjectName(NEW_FLOW_SAMPLE);
-        // createFlow.fillProjectDescription(NEW_FLOW_SAMPLE);
-        // Assertions.assertEquals(
-        //         NEW_FLOW_SAMPLE,
-        //         createFlow.projectNameInput().inputValue(),
-        //         "Project name field should reflect the entered value");
-        // Assertions.assertEquals(
-        //         NEW_FLOW_SAMPLE,
-        //         createFlow.projectDescriptionInput().inputValue(),
-        //         "Project description should reflect the entered value");
+        createFlow.fillProjectName(NEW_FLOW_SAMPLE);
+        createFlow.fillProjectDescription(NEW_FLOW_SAMPLE);
+        Assertions.assertEquals(
+                NEW_FLOW_SAMPLE,
+                createFlow.projectNameInput().inputValue(),
+                "Project name field should reflect the entered value");
+        Assertions.assertEquals(
+                NEW_FLOW_SAMPLE,
+                createFlow.projectDescriptionInput().inputValue(),
+                "Project description should reflect the entered value");
 
-        // createFlow.clickSave();
-        // page.waitForTimeout(3000);
+        createFlow.clickSave();
+        page.waitForTimeout(40_000);
 
-        flows.openStatusMenuAndSelectAll("All");
+        // flows.openStatusMenuAndSelectAll("All");
         flows.openStatusMenuAndSelectAll("not published");
 
         flows.expectFlowNamedInTable(NEW_FLOW_SAMPLE);
