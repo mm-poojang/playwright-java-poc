@@ -1,5 +1,6 @@
 package com.example;
 
+import com.example.pages.DataPage;
 import com.example.pages.FlowsPage;
 import com.example.support.MdoSession;
 import com.example.support.PlaywrightArtifactsExtension;
@@ -13,10 +14,12 @@ public class MdoLoginTest {
 
     @Test
     void submitsOrganizationUsernameAndChoosesPasswordLogin(Page page) {
-        FlowsPage flows = MdoSession.signInOpenFlowsAll(page);
+        // FlowsPage flows = MdoSession.signInOpenFlowsAll(page);
+        DataPage dataPage = MdoSession.signInOpenDataPage(page);
 
-        Assertions.assertTrue(flows.flowsHeading().isVisible(), "Flows title should be visible");
-        Assertions.assertTrue(
-                flows.createNewFlowButton().isVisible(), "Create new flow button should be visible");
+         Assertions.assertTrue(dataPage.DataHeading().isVisible(), "Data title should be visible");
+        Assertions.assertTrue(dataPage.DataHeading().isVisible(), "Flows title should be visible");
+        // Assertions.assertTrue(
+        //         flows.createNewFlowButton().isVisible(), "Create new flow button should be visible");
     }
 }

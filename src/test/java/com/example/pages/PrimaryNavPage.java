@@ -1,8 +1,9 @@
 package com.example.pages;
 
+import java.util.regex.Pattern;
+
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import java.util.regex.Pattern;
 
 /**
  * Authenticated shell top navigation ({@code div.nav-root} / {@code mat-nav-list.primary-nav-list}).
@@ -42,6 +43,12 @@ public final class PrimaryNavPage {
                 .filter(new Locator.FilterOptions().setHasText(FLOWS_NAV_LABEL));
     }
 
+    public Locator dataNavItem() {
+        return primaryNavList()
+                .locator("mat-list-item.link-items")
+                .filter(new Locator.FilterOptions().setHasText(Pattern.compile("^\\s*Data\\s*$")));
+    }
+
     /** Waits until the post-login top bar and primary nav items are rendered. */
     public void expectLoaded() {
         Locator.WaitForOptions wait = new Locator.WaitForOptions().setTimeout(60_000);
@@ -54,6 +61,15 @@ public final class PrimaryNavPage {
     public void clickFlows() {
         System.out.println("Flows nav item clicked");
         Locator label = flowsNavLabel();
+        label.waitFor();
+        label.scrollIntoViewIfNeeded();
+        label.click();
+    }
+
+    public void clickData()
+    {
+        System.out.println("Data nav item clicked");
+        Locator label = dataNavItem();
         label.waitFor();
         label.scrollIntoViewIfNeeded();
         label.click();

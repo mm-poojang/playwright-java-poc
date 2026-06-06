@@ -8,6 +8,10 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .flattened-pom.xml
+surefire-reports/
+classes/
+maven-status/
+test-classes/
 
 # ─── Playwright / test artifacts ─────────────────────────────
 # Videos, screenshots, traces (also under target/ when using default paths)
