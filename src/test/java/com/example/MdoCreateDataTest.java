@@ -27,9 +27,14 @@ public class MdoCreateDataTest {
         dataPage.clickNewRecordAndSelectFlow();
         dataPage.addPlantAndWait();
         dataPage.fillFormFields();
+        String materialDescriptionId = dataPage.enterMaterialDescriptionNumber();
         dataPage.uploadFile("DNG", "DemoImage.dng");
         dataPage.uploadFile("DOC","TestDocumentFor FileUpload.doc");
         dataPage.selectRadio01();
         dataPage.submitForm();
+
+        dataPage.searchAndSelect(materialDescriptionId);
+        dataPage.openSummaryAndRejectFlow();
+        dataPage.validateSummaryDetails();
     }
 }

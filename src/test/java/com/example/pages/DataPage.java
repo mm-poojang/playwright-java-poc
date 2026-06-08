@@ -1,15 +1,15 @@
 package com.example.pages;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
-
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.WaitForSelectorState;
@@ -21,8 +21,12 @@ public final class DataPage {
     /** Hash route for the all-flows view (path/host may differ per environment). */
     public static final Pattern DATA_URL = Pattern.compile(".*#/home/list/datatable/\\d+.*");
 
+    public static String objectNumber;
+    public static String materialType;
+
     public static final String TEST_FILE_PATH = "src/test/resources/DemoImage.png";
-     public final Page page;
+    
+    public final Page page;
 
     public DataPage(Page page) {
         this.page = page;
@@ -232,7 +236,7 @@ public final class DataPage {
     public void selectMaterialType(String value) {
         materialTypeInput().click();
         materialTypeInput().fill(value);
-
+        materialType=value;
         Locator option = page.locator("[role='option']")
                 .filter(new Locator.FilterOptions()
                         .setHasText(value))
@@ -252,8 +256,7 @@ public final class DataPage {
 
     public void fillFormFields() {
         openMaterialTypeDropdown();
-        selectMaterialType("ERSA");
-        enterMaterialDescriptionNumber();
+        selectMaterialType("ERSA -- Spare Part");
         fillNextField();
         selectLotSize("EX");
 
@@ -292,12 +295,13 @@ public final class DataPage {
         radio01().check();
     }
 
-    public void enterMaterialDescriptionNumber() {
+    public String enterMaterialDescriptionNumber() {
         String randomNumber = generate18DigitNumber();
         materialNumber = randomNumber; // store for later use
         Locator input = materialDescriptionInput();
         input.fill(randomNumber);
         System.out.println("Material Number Entered: " + randomNumber);
+        return materialNumber;
     }
 
     public void submitForm() {
@@ -327,6 +331,143 @@ public final class DataPage {
 
         option.waitFor(new Locator.WaitForOptions().setTimeout(10000));
         option.click();
+    }
+
+    public Locator searchInput() {
+        return page.locator("div.filters-list")
+                .locator("lib-search input[placeholder='Search']")
+                .first();
+    }
+
+    public Locator searchResult(String value) {
+        return page.locator("mat-card.global-search mark")
+                .filter(new Locator.FilterOptions().setHasText(value));
+    }
+
+    public Locator applyButton() {
+        return page.getByRole(
+            AriaRole.BUTTON,
+            new Page.GetByRoleOptions().setName("Apply")
+        );
+    }
+
+    public Locator searchResultRow(String searchTerm) {
+        return page.locator("mat-card.global-search tr")
+                .filter(new Locator.FilterOptions().setHasText(searchTerm));
+    }
+
+    public String getObjectNumber(String searchTerm) {
+        Locator row = searchResultRow(searchTerm);
+
+        assertVisible(row);
+        String objectNumber = row
+                .locator("td")
+                .first()
+                .locator("lib-text-line")
+                .textContent()
+                .trim();
+
+        return objectNumber;
+    }
+
+    public Locator objectNumberInGrid(String objectNumber) {
+        return page.locator(
+            "td.mat-column-OBJECTNUMBER lib-text-line"
+        ).filter(
+            new Locator.FilterOptions().setHasText(objectNumber)
+        );
+    }
+
+    public String verifyObjectNumberInGrid(String objectNumber) {
+        Locator objectNumberCell = objectNumberInGrid(objectNumber);
+
+        assertVisible(objectNumberCell);
+
+        System.out.println("Object Number found in grid: " + objectNumber);
+
+        return objectNumber;
+    }
+
+    public void searchAndSelect(String searchTerm) {
+        searchInput().click();
+        searchInput().fill(searchTerm);
+        String materialNumber = getObjectNumber(searchTerm);
+
+        Locator result = searchResult(searchTerm);
+
+        assertVisible(result);
+        result.click();
+        assertVisible(applyButton());
+        applyButton().click();
+        System.out.println("Apply button Clicked");
+
+        objectNumber = verifyObjectNumberInGrid(materialNumber);
+    }
+
+   public Locator rowByObjectNumber(String objectNumber) {
+        return page.locator("tr")
+                .filter(new Locator.FilterOptions().setHasText(objectNumber));
+    }
+
+    public Locator summaryMenuItem() {
+        return page.getByRole(AriaRole.MENUITEM,
+            new Page.GetByRoleOptions().setName("Summary"));
+    }
+
+    public Locator rejectFlowButton() {
+        return page.getByRole(AriaRole.MENUITEM,
+            new Page.GetByRoleOptions().setName("3Reject flow"));
+    }
+
+    public void clickEllipsisForObject(String objectNumber) {
+
+        Locator row = page.locator("tr")
+                .filter(new Locator.FilterOptions().setHasText(objectNumber));
+
+        row.locator("mat-icon[fonticon='fa-ellipsis-h']")
+                .click();
+
+        System.out.println("Clicked ellipsis for Object Number: " + objectNumber);
+    }
+
+    public void openSummaryAndRejectFlow() {
+        // Click 3 dots
+        clickEllipsisForObject(objectNumber);
+
+        // Click Summary
+        assertVisible(summaryMenuItem());
+        summaryMenuItem().click();
+
+        // Click 3Reject flow
+        assertVisible(rejectFlowButton());
+        rejectFlowButton().click();
+
+        assertVisible(materialTypeDropdown());
+        System.out.println("Reject Flow popup loaded successfully");
+    }
+
+    public void validateSummaryDetails() {
+
+        String actualMaterialNumber =
+            materialDescriptionInput().inputValue().trim();
+
+        String actualMaterialType =
+            materialTypeInput().inputValue().trim();
+
+        assertEquals(
+            materialNumber.trim(),
+            actualMaterialNumber,
+            "Material Number mismatch"
+        );
+
+        assertEquals(
+            materialType.trim(),
+            actualMaterialType,
+            "Material Type mismatch"
+        );
+
+        System.out.println("Material Number Validated: " + actualMaterialNumber);
+        System.out.println("Material Type Validated: " + actualMaterialType);
     }
 
 }
